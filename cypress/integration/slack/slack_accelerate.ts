@@ -1,4 +1,3 @@
-import { first, isElement } from "cypress/types/lodash";
 import * as faker from "faker";
 
 // Some cy.* commands perform actionability - see https://docs.cypress.io/guides/core-concepts/interacting-with-elements#Actionability
@@ -22,7 +21,7 @@ const channelTitleSelector =
   ".p-view_header__channel_title.p-view_header__truncated_text";
 const textSectionPreviousMessage = ".p-rich_text_section";
 
-// Environment Constants
+// Environment Constants - some are contained in cypress.env.json(.gitignored) to aid circumvent pushing secure info to remote repo
 const userName1: string = Cypress.env("userName1");
 const password1: string = Cypress.env("password1");
 const otp1: string = Cypress.env("otp1");
@@ -31,7 +30,6 @@ const password2: string = Cypress.env("password2");
 const otp2: string = Cypress.env("otp2");
 
 // String Constants
-const uniqueTestMessage = `Test Message: ${faker.lorem.words(10)}`;
 const signOutMessage = "Sign out of PartsTrader Markets";
 const lastChannelName = "Recent Apps";
 
@@ -45,7 +43,7 @@ const LoginUsingMFA = (username: string, password: string, otp: string) => {
   cy.get(emailInputSelector).type(username); // performs actionability
   cy.get(passwordInputSelector).type(password, { log: false });
   cy.get(signinButtonSelector).click();
-  cy.task("generateOTP", otp).then((token: string) => {
+  cy.task("generateOTP", otp, { log: false }).then((token: string) => {
     cy.get(mfaInputTokenSelector)
       .should("be.visible")
       .first()
@@ -85,7 +83,8 @@ const ScrollToChannel = (label: string, channel: string) => {
     .should("be.visible");
   cy.get(channelSelector(channel))
     .should("be.visible")
-    .click({ scrollBehavior: false }); // Turn off actionability checks as this does some wierd scrolling stuff
+    .click({ scrollBehavior: false })
+    .wait(200); // Turn off actionability checks as this does some wierd scrolling stuff
 
   // Verify on the inception channel
   cy.get(channelTitleSelector).should("be.visible").contains(channel); // multiple classes
@@ -106,46 +105,17 @@ const CheckTextMessagePreviouslySent = (message: string) => {
 
 describe("Slack Test's", () => {
   it.only("Scenario 1", () => {
-    // Login
-    LoginUsingMFA(userName1, password1, otp1);
+    const uniqueTestMessage = `Test Message: ${faker.lorem.words(10)}`;
 
-    // Check if Channels Exists, is expanded then scroll into view, else click on it and scroll into view
+    LoginUsingMFA(userName1, password1, otp1);
+    //LoginUsingMFA(userName2, password2, otp2);
 
     ScrollToChannel("Channels", "inception-project");
-    // cy.get('[data-qa="message_input"]').should('be.visible').contains(/^Message #inception-project$/)
 
-    // Enter a message in the channel
     SendTextMessage(uniqueTestMessage);
 
-    // //Verify what we have type appears as last received message. This is a bad selector
     CheckTextMessagePreviouslySent(uniqueTestMessage);
 
-    // Trying to get the hover over icons - not working
-    // cy.get(".p-rich_text_section").contains(testMessage).click({ force: true });
-    // cy.get(".p-rich_text_section").contains(testMessage).focus();
-    // cy.pause();
-    // // log out
     Logout();
-
-    // mfaLogin(userName2, password2, otp2);
-
-    // // Go to the channel
-    // cy.get("[data-qa=channel_sidebar__section_heading_label__channels]")
-    //   .scrollIntoView()
-    //   .should("be.visible");
-
-    // cy.get("[data-qa=channel_sidebar_name_inception-project]")
-    //   .should("be.visible")
-    //   .click({ force: true }); // Turn off actionability checks as this does some wierd scrolling stuff
-
-    // // Verify on the inception channel
-    // cy.get(
-    //   ".p-view_header__channel_title.p-view_header__truncated_text"
-    // ).should("be.visible"); // multiple classe
-
-    // cy.get(".p-rich_text_section").contains(testMessage).trigger("mouseover");
-    // // Hover
-    // // c-button-unstyled c-icon_button c-icon_button--light c-icon_button--size_small c-message_actions__button
-    // Logout();
   });
 });
